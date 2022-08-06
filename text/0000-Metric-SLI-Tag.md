@@ -4,11 +4,11 @@ Add a standard metadata tag to Metric data structure.
 
 ## Motivation
 
-By adding metadata tag to metrics, we can get benefits from the following scenarios:
+OpenTelemetry provides a standard data format and model to process telemetry data with different types of backends. However, in the current standard format there is no existing space for adding metadata. By adding metadata tag to metrics, we can get benefits from the following scenarios:
 
-### End to End Metrics data consuming
+### Data Analysis and Consumption
 
-To enable an end-to-end metrics consuming and computation pipeline, user needs to manually write some configurations to specify how to transform and consume specific types of metrics data. We could leverage the metadata tag to provide an out-of-box solution which allows users to attach essential information when they are instrumenting. In details, users could attach a `Latency` tag to a metric which denotes this is a latency related metric. And in the consuming pipeline, we could read this tag and automatically compute the latency statistics.
+To achieve end-to-end data analysis, users need to manually write some configurations to specify how to transform and consume specific types of metrics data. We could leverage the metadata tag to provide an out-of-box solution which allows users to attach essential information when they are instrumenting. In details, users could attach a `Latency` tag to a metric which denotes this is a latency related metric. And in the consuming pipeline, we could read this tag and automatically compute the latency statistics.
 
 ### Data Management
 
@@ -16,19 +16,34 @@ There will be countless telemetry data generated every moment and how to automat
 
 ## Explanation
 
-From a user perspective, giving the ability of adding metadata as a tag to metrics will be much helpful when they construct data pipeline. For instance, users could register a metric with some sli definition:
-```csharp
-metricsBuilder.AddMeter("MeterName", {
+From a user perspective, giving the ability of adding metadata to metrics will be much helpful when they construct data pipeline, do data analysis, and data management.
+
+For instance, users could register a metric with some sli definition which could help user to consume metric data easily in the following pipeline:
+
+```cs
+metricsBuilder.AddMeter("SLIMeter", {
     {"Category", "Latency"},
+    {"Window", "PT5M"},
+    {"Percentile", "999"},
+});
+```
+
+In this use case, users could attach SLI definition(Category, Observation Window, and Percentile) to the metric data. And in the later stage, users could utilize those information to construct a data pipeline.
+
+Apart from SLI definition, user could also utilize the metadata to manage the data policy and data governance of telemetry data. For instance, users could use the following code:
+
+```cs
+metricsBuilder.AddMeter("MeterName", {
     {"Visibility", "Public"},
     {"LifeSpan", "Permanent"},
-})
+});
 ```
-And then those metadata will be attached to the metric data and sent to the data pipeline. In data pipeline, it can read those metadata and react with correct behavior with the given metadata.
+
+With the above metadata attached in the metric data, users could set data policy at the instrumenting stage and directly connect OpenTelemetry to the data management system.
 
 ## Internal details
 
-Implementations will first require changes on the `OpenTelemetry Proto`. In this repo, we will need to add a set of new field to describe the metadata tag.
+Implementations will first require changes on the `OpenTelemetry Proto`. In this level, we will need to add a set of new field to describe the metadata tag.
 
 Then, we need to update the Otel Proto at the collector and sdk side to support the new field.
 
@@ -40,7 +55,10 @@ We only introduce new tags in the OpenTelemetry data, which will potentially inc
 
 ## Prior art and alternatives
 
-N/A
+One alternative way is to add those metadata tags as a set of record when users are instrumenting. This is a workable solution with the following trade-offs:
+
+- Hard to distinguish between the metadata tags and the actual metric data.
+- No high level abstraction means users need to repeat the logics over and over again.
 
 ## Open questions
 
