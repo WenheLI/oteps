@@ -1,24 +1,27 @@
-# Add Metrics Metadata tag definition
+# Enable adding Metrics Metadata definition
 
-Add a standard metadata tag to Metric data structure.
+This proposal is to enable capability in OTel APIs to allow adding metadata while adding a metrics definition.
 
 ## Motivation
 
-OpenTelemetry provides a standard data format and model to process telemetry data with different types of backends. However, in the current standard format there is no existing space for adding metadata. By adding metadata tag to metrics, we can get benefits from the following scenarios:
-
-### Data Analysis and Consumption
-
-To achieve end-to-end data analysis, users need to manually write some configurations to specify how to transform and consume specific types of metrics data. We could leverage the metadata tag to provide an out-of-box solution which allows users to attach essential information when they are instrumenting. In details, users could attach a `Latency` tag to a metric which denotes this is a latency related metric. And in the consuming pipeline, we could read this tag and automatically compute the latency statistics.
+OpenTelemetry provides API specifications to build language specific SDK to instrument telemetry data. It also have OTel Collector concepts to process n publish telemetry data to multiple different Observability backends. However, current specifications lacks the ability to define additional context while adding a metrics definition. This additional metrics context will be very useful for Telemetry Data Management and Analytics.
 
 ### Data Management
 
-There will be countless telemetry data generated every moment and how to automatically manage the data is also a challenge. By attaching metadata tag to the telemetry data(metrics in this case), we can allow users to specify the visibility, life-span, and other information about the telemetry data ahead of time.
+We're leveraging OTel .Net SDK to instrument telemetry data specifically for metrics data across many services in Azure. And then publishing this data to one or more Observability backends. Given the data volumn and scale, it's being very challenging for us to manage data access or policies. Any simple change like adding/updating data visibility or life-span becomes very time consuming and tedious process. Same goes for privacy and compliance policies.
+
+This is a generic problem, there are countless telemetry data generated every moment and how to automatically manage this data is a big challenge. By adding additional context to the telemetry data (metrics in this case), we can allow users to specify the visibility, life-span, and other information about the telemetry data ahead of time. Users will also be able to specify privacy and compliance tags to indicate what telemetry data is being emitted and how to handle it.
+
+### Data Analysis and Consumption
+We also faced significant challenges to consume our telemetry data for analytics purpose due to lack of knowing how to consume this data. Since data authors and data consumers can and mostly are different personas so consumers always needs some guidance to be able to consume it.
+
+To achieve end-to-end data analysis, data authors usually write some additional tool or service to specify how to transform and consume specific types of telemetry metrics data. We could leverage the metrics metadata (added as additional metrics context) to provide an out-of-box solution for analytics which allows users to attach essential information when they are instrumenting. For example, some service health analytics scenarios can leverage metrics metadata to figure out if a given metrics is SLI metrics or not and if it's then what SLI category like 'Availability' or 'Latency' it represents.
 
 ## Explanation
 
 From a user perspective, giving the ability of adding metadata to metrics will be much helpful when they construct data pipeline, do data analysis, and data management.
 
-For instance, users could register a metric with some sli definition which could help user to consume metric data easily in the following pipeline:
+For instance, users could register a metric with some sli definition which could help user to consume metric data easily for analytics purpose:
 
 ```cs
 metricsBuilder.AddMeter("SLIMeter", {
@@ -55,9 +58,9 @@ We only introduce new tags in the OpenTelemetry data, which will potentially inc
 
 ## Prior art and alternatives
 
-One alternative way is to add those metadata tags as a set of record when users are instrumenting. This is a workable solution with the following trade-offs:
+One alternative way is to add those additional metrics context as a set of record when users are instrumenting. This is a workable solution with the following trade-offs:
 
-- Hard to distinguish between the metadata tags and the actual metric data.
+- Hard to distinguish between the metrics metadata and the actual metric data.
 - No high level abstraction means users need to repeat the logics over and over again.
 
 ## Open questions
